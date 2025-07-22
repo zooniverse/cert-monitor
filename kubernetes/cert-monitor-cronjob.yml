@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cert-monitor
+spec:
+  schedule: "0 8 * * *"
+  concurrencyPolicy: Forbid   # Prevent overlapping runs
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          containers:
+          - name: cert-monitor
+            image: ghcr.io/zooniverse/cert-monitor:latest
+            command: ["/bin/bash"]
+            args: ["-c", "python /app/monitor.py"]
+            env:
+            - name: WARNING_DAYS
+              value: '30'
+            - name: SMTP_SERVER
+              value: 'email-smtp.us-east-1.amazonaws.com'
+            - name: EMAIL_FROM
+              value: 'cert-monitor@zooniverse.org'
+            - name: EMAIL_TO
+              value: 'zach@zooniverse.org'
+            envFrom:
+            - secretRef:
+                name: cert-monitor-config
+          restartPolicy: Never
